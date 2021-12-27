@@ -1,6 +1,5 @@
 const {category, user} = require('../../models/category')
 const Joi = require('joi')
-const { async } = require('q')
 
 exports.addCategory = async(req, res)=>{
     const schema = Joi.object({
@@ -69,7 +68,7 @@ exports.getCategory = async (req,res)=>{
     }
 }
 
-exports.getCountries = async(req, res)=>{
+exports.getCategories = async(req, res)=>{
     try {
         const data = await category.findAll({
             attributes :{
