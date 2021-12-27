@@ -14,7 +14,7 @@ exports.register = async(req, res)=>{
 
     const {error} = scheme.validate(req.body)
     if(error){
-       return res.status(404).send({
+       return res.status(400).send({
             status : 'error',
             message : error.details[0].message.replace(/"/g,"")
         })
@@ -220,6 +220,7 @@ exports.editUser = async(req,res)=>{
 
             if(dataUser.image.match(/coolfash\/avatar\/defualt_profile_coolfash_user.png/g)){
                 await cloudinary.uploader.destroy(dataUser.image,(res)=>console.log(res))
+                // fs.unlinkSync( path )
             }
 
             const imagePath = await cloudinary.uploader.upload(req.file.path,{
