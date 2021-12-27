@@ -1,6 +1,7 @@
 const Joi = require('joi')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const cloudinary = require('../helper/cloudinary')
 const {user} =require('../../models')
 
 exports.register = async(req, res)=>{
@@ -48,10 +49,6 @@ exports.register = async(req, res)=>{
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(req.body.password,salt)
 
-        const randomName = Math.floor(Math.random()*8);
-        console.log("randomName: ", randomName)
-        const pathAvatar = `coolfash/avatar/${randomName}.png`
-
         const addUser = await user.create({
             ...req.body,
             password:  hashedPassword,
@@ -60,7 +57,7 @@ exports.register = async(req, res)=>{
             address: '',
             phone: 0,
             gender: '',
-            image : pathAvatar,
+            image : 'coolfash/avatar/defualt_profile_coolfash_user.png',
 
         })
         const token = jwt.sign({id:addUser.id},process.env.TOKEN_USER)
@@ -150,17 +147,183 @@ exports.getUsers = async(req,res)=>{
         if(!findUser){
             res.status(403).send({
                 status : 'forbidden',
-                message : 'Token is invalid'
+                message : 'Forbidden to access'
             })
         }
 
-        const dataUsers = await user.findAll({
+        let dataUsers = await user.findAll({
             attributes :{
                 exclude : ['createdAt','updatedAt','password']
             },
             raw : true,
         })
 
+        dataUsers = dataUsers.map(data=>{
+            return({
+                ...data,
+                image: cloudinary.url(data.iamge,{secure:true})
+            })
+        })
+
+        res.status(200).send({
+            status: 'success',
+            data : dataUsers
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status : 'error',
+            message : error
+        })
+    }
+}
+
+exports.getUser = async (req, res)=>{
+    try {
+        let dataUser = await user.findOne({
+            where : {
+                id : req.user.id
+            },
+            attributes:{
+                exclude : ['createdAt','updatedAt','password']
+            },
+            raw: true
+        })
+        dataUser = dataUser.map(data=>{
+            return{
+                ...data,
+                image : cloudinary.url(data.image)
+            }
+        })
+        res.status(200).send({
+            status : 'success',
+            data : dataUser
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status : 'error',
+            message : error
+        })
+    }
+}
+
+exports.editUser = async(req,res)=>{
+    try {
+        let dataEdited
+
+        if(req.file){
+            const dataUser = await user.findOne({
+                where :{
+                    id : req.user.id
+                },
+                raw : true
+            })
+
+            if(dataUser.image.match(/coolfash\/avatar\/defualt_profile_coolfash_user.png/g)){
+                await cloudinary.uploader.destroy(dataUser.image,(res)=>console.log(res))
+            }
+
+            const imagePath = await cloudinary.uploader.upload(req.file.path,{
+                folder : 'coolfash/profile',
+                use_filename: true,
+                unique_filename : false
+            })
+            dataEdited ={
+                ...req.body,
+                image : imagePath
+            }
+        }else{
+            dataEdited ={
+                ...req.body,
+            }
+        }
+
+        await user.update(dataEdited,{
+            where :{
+                id : req.user.id
+            }
+        })
+        res.status(200).send({
+            status: 'success',
+            message : 'Success update user data',
+            data : {
+                id : req.user.id
+            }
+        })
+
+    } catch (error) {
+        return res.status(500).send({
+            status : 'error',
+            message : error
+        })
+    }
+}
+
+exports.deleteUser = async()=>{
+    try {
+        const findData = await user.findOne({
+            where :{
+                id : req.user.id,
+                status : 'admin'
+            }
+        })
+
+        if(!findData){
+            return res.status(500).send({
+                status : 'forbidden',
+                message : 'Forbidden to access'
+            })
+        }
+
+
+        if(findData.image.match(/coolfash\/avatar\/defualt_profile_coolfash_user.png/g)){
+            await cloudinary.uploader.destroy(findData.image,{secure:true})
+        }
+
+        await user.destroy({
+            where :{
+                id : req.user.id
+            }
+        })
+        return res.code(201).send({
+            status : 'success',
+            message : 'Delete user success',
+            data : {
+                id : req.user.id
+            }
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status : 'error',
+            message : error
+        })
+    }
+}
+
+exports.checkAuth = async (req, res)=>{
+    try {
+        
+        const dataUser = await user.findOne({
+            where :{
+                id : req.user.id
+            },
+            attributes :{
+                exclude : ["createdAt", "updatedAt", "password"]
+            }
+        })
+
+        if(!dataUser){
+            res.code(404).send({
+                status : 'failed',
+            })
+        }
+
+        res.code(200).send({
+            status : 'success',
+            data :{
+                ...dataUser,
+                image : cloudinary.url(dataUser.image,{secure:true})
+            }
+        })
     } catch (error) {
         return res.status(500).send({
             status : 'error',
