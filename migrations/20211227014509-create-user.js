@@ -14,6 +14,12 @@ module.exports = {
       password: {
         type: Sequelize.STRING
       },
+      username: {
+        type: Sequelize.STRING
+      },
+      status :{
+        type: Sequelize.STRING
+      },
       fullName: {
         type: Sequelize.STRING
       },
@@ -24,6 +30,9 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       gender: {
+        type: Sequelize.STRING
+      },
+      image: {
         type: Sequelize.STRING
       },
       createdAt: {
