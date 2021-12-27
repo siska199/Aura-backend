@@ -22,7 +22,7 @@ exports.addCategory = async(req, res)=>{
             }
         })
         if(!userData){
-            res.status(403).send({
+            return res.status(403).send({
                 status : 'forbidden',
                 message : 'Forbidden to access'
             })
