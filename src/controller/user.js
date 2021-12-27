@@ -47,6 +47,11 @@ exports.register = async(req, res)=>{
 
         const salt = await bcrypt.genSalt(10)
         const hashedPassword = await bcrypt.hash(req.body.password,salt)
+
+        const randomName = Math.floor(Math.random()*8);
+        console.log("randomName: ", randomName)
+        const pathAvatar = `coolfash/avatar/${randomName}.png`
+
         const addUser = await user.create({
             ...req.body,
             password:  hashedPassword,
@@ -55,7 +60,7 @@ exports.register = async(req, res)=>{
             address: '',
             phone: 0,
             gender: '',
-            image :'',
+            image : pathAvatar,
 
         })
         const token = jwt.sign({id:addUser.id},process.env.TOKEN_USER)
@@ -155,7 +160,7 @@ exports.getUsers = async(req,res)=>{
             },
             raw : true,
         })
-        
+
     } catch (error) {
         return res.status(500).send({
             status : 'error',
