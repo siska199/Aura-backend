@@ -133,6 +133,8 @@ exports.getProduct = async(req,res)=>{
 
 exports.getProducts = async(req,res)=>{
     try {
+        const page = req.query.page 
+
         let dataProducts = await traceDeprecation.findAll({
             include :{
                 model :category,
@@ -159,6 +161,11 @@ exports.getProducts = async(req,res)=>{
                 images
             })
         })
+
+        if(page){
+            dataProducts = dataProducts.splice(page-1,page*5)
+            console.log("page pagination: ", page)
+        }
 
         return res.status(200).send({
             status:'success',
