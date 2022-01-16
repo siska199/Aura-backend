@@ -1,9 +1,10 @@
 const {transaction,product,user,category} = require('../../models')
 const Joi = require('joi')
+
 const categoryInformation = {
     model:category,
     as : 'category'
-},
+}
 
 const productInformation  = {
     model : product,
@@ -193,3 +194,25 @@ exports.editTransaction = async(req,res)=>{
     }
 }
 
+
+exports.deleteTransaction = async(req, res)=>{
+    try {
+        const {id} = req.params
+
+        await transaction.destroy({
+            where :{
+                id
+            }
+        })
+        return res.status(200).send({
+            status : 'success',
+            message : `Success delete transaction with id: ${id}`,
+            data
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status : 'error',
+            message : error
+        })
+    }
+}

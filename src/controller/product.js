@@ -1,8 +1,8 @@
-const {product,category,user} = require('../../models/product')
+const {product,category,user,comment} = require('../../models')
 const Joi = require('joi')
 const fs = require('fs')
-const { traceDeprecation } = require('process')
-const { async } = require('q')
+const cloudinary = require('../helper/cloudinary')
+
 exports.addProduct = async(req, res)=>{
     const scheme = Joi.object({
         title:Joi.string(),
@@ -14,6 +14,7 @@ exports.addProduct = async(req, res)=>{
         size:Joi.string(),
         color:Joi.string(),
     })
+
     console.log("Req.body: ",req.body)
     const {images,stockFull,...dataVal} = scheme.validate
     const {error} = scheme.validate(dataVal)
@@ -180,7 +181,7 @@ exports.getProducts = async(req,res)=>{
     }
 }
 
-exports.editTrip = async(req, res)=>{
+exports.editProduct = async(req, res)=>{
     try {
         let data = {...req.body}
         if(req.files){
@@ -285,7 +286,7 @@ exports.deleteProduct = async (req, res)=>{
     }
 }
 
-exports.getProductTransactions = (req, res)=>{
+exports.getProductTransactions = async(req, res)=>{
     try {
         let dataPT = await product.findAll({
             include :[

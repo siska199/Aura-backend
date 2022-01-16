@@ -2,7 +2,7 @@
   "development": {
     "username": "root",
     "password": null,
-    "database": "coofash199",
+    "database": "aura199",
     "host": "localhost",
     "dialect": "mysql",
     "logging":false

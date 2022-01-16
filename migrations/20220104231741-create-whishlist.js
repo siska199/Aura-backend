@@ -12,7 +12,7 @@ module.exports = {
         type: Sequelize.BOOLEAN
       },
       idProduct: {
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
         references:{
           model:'products',
           key:'id'

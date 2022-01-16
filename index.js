@@ -2,9 +2,11 @@ require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const router = require('./src/router/routes')
-
+const path = require('path')
 const app = express()
 
+const dir = path.join(__dirname)
+app.use(express.static(dir))
 app.use(express.json())
 app.use(cors())
 

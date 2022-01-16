@@ -1,7 +1,6 @@
 const multer = require('multer')
 
 exports.upload = (image)=>{
-    console.log("file masuk: ", image)
     const storage = multer.diskStorage({
         destination : function(req,file,cb){
             if(image=='images'){

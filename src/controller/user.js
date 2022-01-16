@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const cloudinary = require('../helper/cloudinary')
 const {user} =require('../../models')
-
+const fs = require('fs')
 exports.register = async(req, res)=>{
 
     const scheme = Joi.object({
@@ -52,16 +52,16 @@ exports.register = async(req, res)=>{
         const addUser = await user.create({
             ...req.body,
             password:  hashedPassword,
-            status:'user',
+            status:'admin',
             fullName: '',
             address: '',
             phone: 0,
             gender: '',
-            image : 'coolfash/avatar/defualt_profile_coolfash_user.png',
+            image : 'avatar/defualt.png',
 
         })
         const token = jwt.sign({id:addUser.id},process.env.TOKEN_USER)
-        res.status(200).send({
+        return res.status(200).send({
             status : 'success',
             data :{
                 email : addUser.email,
@@ -71,7 +71,7 @@ exports.register = async(req, res)=>{
     } catch (error) {
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }
@@ -95,14 +95,14 @@ exports.login = async(req, res)=>{
     try {
         const findUser = await user.findOne({
             where:{
-                email : req.body.username
+                username : req.body.username
             },
             attributes :{
-                exclude : ['createdAt','updatedAt','password']
-            }       
+                exclude : ['createdAt','updatedAt' ]
+            },
+            raw:true       
         })
 
-        console.log("Data finduser: ", findUser)
 
         if(!findUser){
             return res.status(404).send({
@@ -124,20 +124,24 @@ exports.login = async(req, res)=>{
             message : 'Login success',
             data :{
                 ...findUser,
-                token
+                image : cloudinary.url(findUser.image,{secure:true}),
+                password : "forbidden to access",
+                token,
+
             }
         })
+
     } catch (error) {
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }
 
 exports.getUsers = async(req,res)=>{
     try {
-        const findUser = await findOne({
+        const findUser = await user.findOne({
             where:{
                 id : req.user.id,
                 status: 'admin'
@@ -145,7 +149,7 @@ exports.getUsers = async(req,res)=>{
         })
 
         if(!findUser){
-            res.status(403).send({
+           return  res.status(403).send({
                 status : 'forbidden',
                 message : 'Forbidden to access'
             })
@@ -161,7 +165,8 @@ exports.getUsers = async(req,res)=>{
         dataUsers = dataUsers.map(data=>{
             return({
                 ...data,
-                image: cloudinary.url(data.iamge,{secure:true})
+              image : cloudinary.url(data.image,{secure:true})
+
             })
         })
 
@@ -172,36 +177,35 @@ exports.getUsers = async(req,res)=>{
     } catch (error) {
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }
 
 exports.getUser = async (req, res)=>{
     try {
-        let dataUser = await user.findOne({
+
+        const dataUser = await user.findOne({
             where : {
-                id : req.user.id
+                id : req.params.id
             },
             attributes:{
                 exclude : ['createdAt','updatedAt','password']
             },
             raw: true
         })
-        dataUser = dataUser.map(data=>{
-            return{
-                ...data,
-                image : cloudinary.url(data.image)
-            }
-        })
-        res.status(200).send({
+
+        return res.status(200).send({
             status : 'success',
-            data : dataUser
+            data : {
+                ...dataUser,
+                image : cloudinary.url(dataUser.image,{secure:true})
+            }
         })
     } catch (error) {
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }
@@ -209,7 +213,6 @@ exports.getUser = async (req, res)=>{
 exports.editUser = async(req,res)=>{
     try {
         let dataEdited
-
         if(req.file){
             const dataUser = await user.findOne({
                 where :{
@@ -217,20 +220,26 @@ exports.editUser = async(req,res)=>{
                 },
                 raw : true
             })
+            const check = dataUser.image.match(/defualt.png/g)
 
-            if(dataUser.image.match(/coolfash\/avatar\/defualt_profile_coolfash_user.png/g)){
+            if(check==null){
                 await cloudinary.uploader.destroy(dataUser.image,(res)=>console.log(res))
-                // fs.unlinkSync( path )
+                console.log("Req file path: ",req.file.path)
+                // fs.unlinkSync('upload/product/'+file.filename)
             }
 
             const imagePath = await cloudinary.uploader.upload(req.file.path,{
-                folder : 'coolfash/profile',
+                folder : 'avatar',
                 use_filename: true,
                 unique_filename : false
             })
+
+            console.log("imagePath: ", imagePath)
+            console.log("imagePath.public_id: ",imagePath.public_id)
+            
             dataEdited ={
                 ...req.body,
-                image : imagePath
+                image : imagePath.public_id
             }
         }else{
             dataEdited ={
@@ -243,7 +252,7 @@ exports.editUser = async(req,res)=>{
                 id : req.user.id
             }
         })
-        res.status(200).send({
+        return res.status(200).send({
             status: 'success',
             message : 'Success update user data',
             data : {
@@ -252,31 +261,31 @@ exports.editUser = async(req,res)=>{
         })
 
     } catch (error) {
+        console.log(error)
+        if(req.file){
+            fs.unlinkSync(req.file.path)
+        }
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }
 
-exports.deleteUser = async()=>{
+exports.deleteUser = async(req,res)=>{
     try {
         const findData = await user.findOne({
             where :{
                 id : req.user.id,
-                status : 'admin'
             }
         })
 
-        if(!findData){
-            return res.status(500).send({
-                status : 'forbidden',
-                message : 'Forbidden to access'
-            })
-        }
+        if(findData.image.match(/avatar\/defualt.png/g)){
+            const urlPhoto = cloudinary.url(findData.image)
+            console.log("findData: ",urlPhoto)
 
+            // fs.unlinkSync('upload/avatar/')
 
-        if(findData.image.match(/coolfash\/avatar\/defualt_profile_coolfash_user.png/g)){
             await cloudinary.uploader.destroy(findData.image,{secure:true})
         }
 
@@ -285,7 +294,7 @@ exports.deleteUser = async()=>{
                 id : req.user.id
             }
         })
-        return res.code(201).send({
+        return res.status(201).send({
             status : 'success',
             message : 'Delete user success',
             data : {
@@ -295,7 +304,7 @@ exports.deleteUser = async()=>{
     } catch (error) {
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }
@@ -318,17 +327,18 @@ exports.checkAuth = async (req, res)=>{
             })
         }
 
-        res.code(200).send({
+        return res.status(200).send({
             status : 'success',
             data :{
                 ...dataUser,
+                password : "Access denied",
                 image : cloudinary.url(dataUser.image,{secure:true})
             }
         })
     } catch (error) {
         return res.status(500).send({
             status : 'error',
-            message : error
+            message : String(error)
         })
     }
 }

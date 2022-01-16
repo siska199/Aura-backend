@@ -1,6 +1,4 @@
-const {product, whishlist} = require('../../models/category')
-const Joi = require('joi')
-
+const {product, whishlist} = require('../../models')
 
 const productInformation  = {
     model : product,
@@ -8,7 +6,6 @@ const productInformation  = {
     attributes :{
         exclude :  ['createdAt','updatedAt']
     },
-    include :categoryInformation
 }
 
 exports.addWhishlist = async(req, res)=>{
@@ -66,7 +63,7 @@ exports.getWhishlists = async(req, res)=>{
             where :{
                 idUser : req.user.id
             },
-            include:productInformation,
+            include: productInformation,
             attributes :{
                 exclude : ['createdAt','updatedAt']
             }   

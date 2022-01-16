@@ -11,21 +11,21 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      whishlist.belongsTo(user,{
+      whishlist.belongsTo(models.user,{
         as:'user',
         foreignKey:'idUser'
       })
 
-      whishlist.belongsTo(product,{
+      whishlist.belongsTo(models.product,{
         as:  'product',
         foreignKey : 'idProduct'
       })
-      
+
     }
   };
   whishlist.init({
     love: DataTypes.BOOLEAN,
-    idProduct: DataTypes.INTEGER,
+    idProduct: DataTypes.UUID,
     idUser: DataTypes.INTEGER
   }, {
     sequelize,

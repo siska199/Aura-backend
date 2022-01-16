@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken')
 
 exports.auth = (req, res,next)=>{
     const autoHeader = req.header('Authorization')
-    console.log("req.header Authorization: ", autoHeader)
     const token = autoHeader && autoHeader.split(' ')[1]
 
     if(!token){

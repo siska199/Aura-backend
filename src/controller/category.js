@@ -1,4 +1,4 @@
-const {category, user} = require('../../models/category')
+const {category, user} = require('../../models')
 const Joi = require('joi')
 
 exports.addCategory = async(req, res)=>{
@@ -34,6 +34,7 @@ exports.addCategory = async(req, res)=>{
             data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -69,6 +70,7 @@ exports.getCategory = async (req,res)=>{
 }
 
 exports.getCategories = async(req, res)=>{
+    console.log("Oke ")
     try {
         const data = await category.findAll({
             attributes :{
@@ -78,10 +80,11 @@ exports.getCategories = async(req, res)=>{
         
         return res.status(200).send({
             status : 'success',
-            message : `Success get categories with ${id}`,
+            message : `Success get categories`,
             data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -101,9 +104,9 @@ exports.editCategory = async(req, res)=>{
         return res.status(200).send({
             status : 'success',
             message : `Success edit category with id: ${id}`,
-            data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -123,9 +126,9 @@ exports.deleteCategory = async(req, res)=>{
         return res.status(200).send({
             status : 'success',
             message : `Success delete category with id: ${id}`,
-            data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
