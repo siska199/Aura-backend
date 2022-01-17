@@ -11,7 +11,7 @@ module.exports = {
           notNull: true
         }
       },
-      iamges: {
+      images: {
         type: Sequelize.STRING
       },
       title: {

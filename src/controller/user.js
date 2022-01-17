@@ -52,7 +52,7 @@ exports.register = async(req, res)=>{
         const addUser = await user.create({
             ...req.body,
             password:  hashedPassword,
-            status:'admin',
+            status:'user',
             fullName: '',
             address: '',
             phone: 0,

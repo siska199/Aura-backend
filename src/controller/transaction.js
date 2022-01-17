@@ -1,9 +1,13 @@
 const {transaction,product,user,category} = require('../../models')
 const Joi = require('joi')
+const cloudinary = require('../helper/cloudinary')
 
 const categoryInformation = {
     model:category,
-    as : 'category'
+    as : 'category',
+    attributes :{
+        exclude :  ['createdAt','updatedAt']
+    },
 }
 
 const productInformation  = {
@@ -38,6 +42,20 @@ exports.addTransaction = async(req, res)=>{
         })
     }
     try {
+        const checkUser = await user.findOne({
+            where:{
+                id : req.user.id,
+                status : 'user'
+            }
+        })
+
+        if(!checkUser){
+            return res.status(400).send({
+                status : 'failed',
+                message : `Admin can't buy product`
+            })
+        }
+
         const findProduct = await product.findOne({
             where :{
                 id : req.body.idProduct
@@ -72,18 +90,21 @@ exports.addTransaction = async(req, res)=>{
                 id : addTransaction.id
             },
             include : [userInformation,productInformation],
+            attributes:{
+                exclude : ['createdAt','updatedAt'],
+            },
             raw : true,
             nest : true
-
         })
 
-        return req.status(200).send({
+        return res.status(200).send({
             status: 'success',
-            message :'Add product success',
+            message :'Add transaction success',
             data : dataTransaction
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -93,9 +114,10 @@ exports.addTransaction = async(req, res)=>{
 
 exports.getTransaction = async(req, res)=>{
     try {
+        console.log("Oke")
         const {id} = req.params
 
-        const data = await transaction.findOne({
+        let data = await transaction.findOne({
             where :{
                 id
             },
@@ -103,11 +125,27 @@ exports.getTransaction = async(req, res)=>{
             raw :true,
             nest:true
         })
+
+        let images = []
+        for(file of JSON.parse(data.product.images)){
+            console.log("file: ", file)
+            images.push(cloudinary.url(file,{secure:true}))
+        }
+        data = {
+            ...data,
+            product : {
+                ...data.product,
+                images : images,
+            }
+        }
+
+        console.log("Result data: ", data)
         return res.status(200).send({
             status : 'success',
             data 
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -127,7 +165,10 @@ exports.getTransactions = async(req, res)=>{
             where :{
                 status : 'Aprove' || 'Waiting Approve'
             },
-            include :[userInformation,productInformation]
+            include :[userInformation,productInformation],
+
+            raw : true,
+            nest : true
         })
 
         if(userData.status=='user'){
@@ -141,15 +182,33 @@ exports.getTransactions = async(req, res)=>{
                     where : {
                         id : req.user.id
                     }
-                }]
+                }],
+                raw : true,
+                nest : true
             })
         }
+
+        data = data.map(d=>{
+            let images = []
+            for(file of JSON.parse(d.product.images)){
+                console.log("file: ", file)
+                images.push(cloudinary.url(file,{secure:true}))
+            }
+            return({ 
+                ...d,
+                product : {
+                    ...d.product,
+                    images : images,
+                }
+            })
+        })
 
         return res.status(200).send({
             status : 'success',
             data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -207,9 +266,10 @@ exports.deleteTransaction = async(req, res)=>{
         return res.status(200).send({
             status : 'success',
             message : `Success delete transaction with id: ${id}`,
-            data
+            
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error

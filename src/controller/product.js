@@ -1,7 +1,31 @@
-const {product,category,user,comment} = require('../../models')
+const {product,category,user,comment,transaction} = require('../../models')
 const Joi = require('joi')
 const fs = require('fs')
 const cloudinary = require('../helper/cloudinary')
+
+const categoryInformation = {
+    model : category,
+    as : 'category',
+    attributes :{
+        exclude :  ['createdAt','updatedAt']
+    }
+}
+
+const commentsInformation = {
+    model : comment,
+    as : 'comments',
+    include : {
+        model : user,
+        as : 'user',
+        attributes :{
+            exclude :  ['createdAt','updatedAt']
+        },
+    },
+    attributes :{
+        exclude :  ['createdAt','updatedAt']
+    }
+}
+
 
 exports.addProduct = async(req, res)=>{
     const scheme = Joi.object({
@@ -16,7 +40,8 @@ exports.addProduct = async(req, res)=>{
     })
 
     console.log("Req.body: ",req.body)
-    const {images,stockFull,...dataVal} = scheme.validate
+
+    const {images,...dataVal} = req.body
     const {error} = scheme.validate(dataVal)
     if(error){
         for (file of req.files){
@@ -48,7 +73,7 @@ exports.addProduct = async(req, res)=>{
             }
         })
 
-        if(!findProduct){
+        if(findProduct){
             return res.status(400).send({
                 status : 'failed',
                 message : 'This product name has been existed'
@@ -69,27 +94,30 @@ exports.addProduct = async(req, res)=>{
 
         let images = []
         for(file of req.files){
-            const path = await cloudinary.uplouder.uploud(file.path,{
-                folder :'coolfash/product',
+            const path = await cloudinary.uploader.upload(file.path,{
+                folder :'product',
                 use_filename : true,
                 unique_filename: false
             })
             images.push(path.public_id)
         }
+        console.log("dataVAl: ", dataVal)
 
         const dataProduct = await product.create({
-            ...dataAdded,
+            ...dataVal,
+            stockFull:dataVal.stock,
             images : JSON.stringify(images),
             idCategory: findCategory.id,
             idUser: req.user.id
         })
 
-        return req.status(200).send({
+        return res.status(200).send({
             status: 'success',
             message :'Add product success',
             data : dataProduct
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -103,15 +131,18 @@ exports.getProduct = async(req,res)=>{
             where :{
                 id : req.params.id
             },
-            attributes:{
+            attributes:{ 
                 exclude :  ['createdAt','updatedAt']
             },
+            include : [categoryInformation,commentsInformation],
             raw:true,
+            nest : true
 
         })
         let images = []
         for(file of JSON.parse(dataProduct.images)){
-            images.push(cloudinary.url(file.public_id,{secure:true}))
+            console.log("file: ", file)
+            images.push(cloudinary.url(file,{secure:true}))
         }
         dataProduct ={
             ...dataProduct,
@@ -136,7 +167,7 @@ exports.getProducts = async(req,res)=>{
     try {
         const page = req.query.page 
 
-        let dataProducts = await traceDeprecation.findAll({
+        let dataProducts = await product.findAll({
             include :{
                 model :category,
                 as : 'category',
@@ -154,7 +185,7 @@ exports.getProducts = async(req,res)=>{
         dataProducts = dataProducts.map(data=>{
             let images = []
             for(file of JSON.parse(data.images)){
-                images.push(cloudinary.url(file))
+                images.push(cloudinary.url(file, {secure:true}))
             }
 
             return({
@@ -174,6 +205,7 @@ exports.getProducts = async(req,res)=>{
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -184,23 +216,27 @@ exports.getProducts = async(req,res)=>{
 exports.editProduct = async(req, res)=>{
     try {
         let data = {...req.body}
+        console.log("req.files :",req.files)
         if(req.files){
             let images = []
             for(file of req.files){
                 const path = await cloudinary.uploader.upload(file.path,{
-                    folder:'coolhash/product',
+                    folder:'product',
                     use_filename:true,
                     unique_filename:false
                 })
+                console.log("path ", path)
                 images.push(path.public_id)
             }
             data = {
                 ...data,
-                images,
+                images:JSON.stringify(images),
             }
+            console.log("data: ", data)
         }
 
         if(req.body.category){
+            console.log("req.body.category: ",req.body.category)
             let findCategory = await category.findOne({
                 where:{
                     name : req.body.category
@@ -225,18 +261,16 @@ exports.editProduct = async(req, res)=>{
 
         const dataSended = await product.findOne({
             where:{
-                id : req.params.id,
-                include : {
-                    model:category,
-                    as : 'category'
-                },
-                attributes :{
-                    exclude :  ['createdAt','updatedAt']
-                },
-                raw:true,
-                nest:true
-            }
+                id : req.params.id
+            },
+            include :[categoryInformation,commentsInformation],
+            attributes :{
+                exclude :  ['createdAt','updatedAt']
+            },
+            raw:true,
+            nest:true
         })
+
         return res.status(200).send({
             status : 'success',
             message : `Updated product with id: ${req.params.id} success`,
@@ -244,6 +278,7 @@ exports.editProduct = async(req, res)=>{
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -259,11 +294,9 @@ exports.deleteProduct = async (req, res)=>{
         })
 
         if(productData  && req.files){
-
             for (file of JSON.parse(productData.images)){
                 await cloudinary.uploader.destroy(file,(result)=>console.log("Deleted :", result))
             }
-
         }
 
         await product.destroy({
@@ -272,14 +305,15 @@ exports.deleteProduct = async (req, res)=>{
             },
         })
 
-        res.status(200).send({
+        return res.status(200).send({
             status : 'success',
+            message : `Succes delete product with id ${id}`,
             data : {
                 id
             }
         }) 
     } catch (error) {
-        res.status(500).send({
+        return res.status(500).send({
             status: 'faild',
             message: error
         })
@@ -301,6 +335,13 @@ exports.getProductTransactions = async(req, res)=>{
                     as : 'transactions',
                     where :{
                         status : 'Approve'
+                    },
+                    include:{
+                        model : user,
+                        as : 'user',
+                        atrributes :{
+                            exclude : ["password","createdAt", "updatedAt"]
+                        }
                     },
                     attributes:{
                         exclude :["createdAt", "updatedAt"]
@@ -332,7 +373,7 @@ exports.getProductTransactions = async(req, res)=>{
             data : dataPT
         })
     } catch (error) {
-        res.status(500).send({
+        return res.status(500).send({
             status: 'faild',
             message: error
         })

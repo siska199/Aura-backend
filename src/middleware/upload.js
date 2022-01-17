@@ -16,7 +16,7 @@ exports.upload = (image)=>{
 
     const fileFilter = function(req, file, cb){
         console.log("file dari fileFilter :",file)
-        if(!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG)/)){
+        if(!file.originalname.match(/\.(jpg|JPG|jpeg|JPEG|png|PNG|jfif)/)){
             req.fileValidationError = {
                 message : 'Only image file are allowed'
             }

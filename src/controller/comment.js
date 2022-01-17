@@ -15,7 +15,6 @@ const userInformation  = {
     },
 }
 
-
 exports.addComment = async(req, res)=>{
     try {
 

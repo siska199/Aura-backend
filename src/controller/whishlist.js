@@ -1,4 +1,4 @@
-const {product, whishlist} = require('../../models')
+const {product, whishlist, user} = require('../../models')
 
 const productInformation  = {
     model : product,
@@ -7,27 +7,57 @@ const productInformation  = {
         exclude :  ['createdAt','updatedAt']
     },
 }
-
+const userInformation  = {
+    model : user,
+    as : 'user',
+    attributes :{
+        exclude :  ['createdAt','updatedAt','password']
+    },
+}
 exports.addWhishlist = async(req, res)=>{
     try {
 
-        const data = await whishlist.create({
+        const dataAdded = await whishlist.create({
             love:true,
             idUser:req.user.id,
             idProduct: req.body.idProduct
         })
+
+        let dataSended = await whishlist.findOne({
+            where :{
+                id : dataAdded.id
+            },
+            include : [productInformation,userInformation],
+            raw : true,
+            nest : true
+        })
+        dataSended = dataSended.map(d=>{
+            let images = []
+            for(file of JSON.parse(data.images)){
+                images.push(cloudinary.url(file, {secure:true}))
+            }
+            return({
+                ...d,
+                product : {
+                    ...d.product,
+                    images 
+                }
+            })
+        })
+
         return res.status(200).send({
             status : 'success',
             message:'success add whishlist',
-            data
+            data : dataSended
+            
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
         })
-    }
-
+    }  
 }
 
 exports.getWhishlist = async (req,res)=>{
