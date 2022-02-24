@@ -1,12 +1,12 @@
 const {user, product, comment} = require('../../models')
 
-const productInformation  = {
-    model : product,
-    as : 'product',
-    attributes :{
-        exclude :  ['createdAt','updatedAt']
-    },
-}
+// const productInformation  = {
+//     model : product,
+//     as : 'product',
+//     attributes :{
+//         exclude :  ['createdAt','updatedAt']
+//     },
+// }
 const userInformation  = {
     model : user,
     as : 'user',
@@ -17,11 +17,10 @@ const userInformation  = {
 
 exports.addComment = async(req, res)=>{
     try {
-
         const data = await comment.create({
             comment:req.body.comment,
             idUser:req.user.id,
-            idProduct: req.body.idProduct
+            idProduct: req.body.idProduct,
         })
 
         return res.status(200).send({
@@ -30,6 +29,7 @@ exports.addComment = async(req, res)=>{
             data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -45,15 +45,17 @@ exports.getComment = async (req,res)=>{
             where:{
                 id
             },
-            include: [productInformation,userInformation],
+            include: [userInformation],
             attributes :{
                 exclude : ['createdAt','updatedAt']
-            }   
+            },
+            raw : true,
+            nest : true 
         })
 
         return res.status(200).send({
             status : 'success',
-            message : `Success get whishlist with ${id}`,
+            message : `Success get comment with ${id}`,
             data
         })
     } catch (error) {
@@ -67,21 +69,21 @@ exports.getComment = async (req,res)=>{
 exports.getComments = async(req, res)=>{
     try {
         const data = await comment.findAll({
-            where :{
-                idUser : req.user.id
-            },
-            include:  [productInformation,userInformation],
+            include:  [userInformation],
             attributes :{
                 exclude : ['createdAt','updatedAt']
-            }   
+            },
+            raw : true,
+            nest : true
         })
         
         return res.status(200).send({
             status : 'success',
-            message : `Success get whishlists with ${id}`,
+            message : 'Success get comments',
             data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -101,9 +103,9 @@ exports.editComment = async(req, res)=>{
         return res.status(200).send({
             status : 'success',
             message : `Success edit comment with id: ${id}`,
-            data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error
@@ -123,9 +125,9 @@ exports.deleteComment = async(req, res)=>{
         return res.status(200).send({
             status : 'success',
             message : `Success delete comment with id: ${id}`,
-            data
         })
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error

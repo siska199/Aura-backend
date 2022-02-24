@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 const cloudinary = require('../helper/cloudinary')
 const {user} =require('../../models')
 const fs = require('fs')
+
 exports.register = async(req, res)=>{
 
     const scheme = Joi.object({
@@ -52,13 +53,13 @@ exports.register = async(req, res)=>{
         const addUser = await user.create({
             ...req.body,
             password:  hashedPassword,
-            status:'user',
+            status:'admin',
             fullName: '',
             address: '',
             phone: 0,
             gender: '',
-            image : 'avatar/defualt.png',
-
+            image :cloudinary.url('avatar/defualt.png',{secure:true}),
+            image_public_id : 'avatar/defualt.png',
         })
         const token = jwt.sign({id:addUser.id},process.env.TOKEN_USER)
         return res.status(200).send({
@@ -79,8 +80,8 @@ exports.register = async(req, res)=>{
 exports.login = async(req, res)=>{
 
     const scheme = Joi.object({
-        password : Joi.string().min(8).max(100).alphanum().required(),
-        username :  Joi.string().min(3).required()   
+        username :  Joi.string().min(3).required(),
+        password : Joi.string().min(8).max(100).alphanum().required()
     })
 
     const {error} = scheme.validate(req.body)
@@ -103,7 +104,6 @@ exports.login = async(req, res)=>{
             raw:true       
         })
 
-
         if(!findUser){
             return res.status(404).send({
                 status : 'failed',
@@ -118,20 +118,20 @@ exports.login = async(req, res)=>{
                 message: 'Username or password is wrong'
             })
         }
+
         const token = jwt.sign({id:findUser.id},process.env.TOKEN_USER)
         return res.status(200).send({
             status : 'success',
             message : 'Login success',
             data :{
                 ...findUser,
-                image : cloudinary.url(findUser.image,{secure:true}),
-                password : "forbidden to access",
+                password : "Forbidden to access",
                 token,
-
             }
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : String(error)
@@ -140,12 +140,13 @@ exports.login = async(req, res)=>{
 }
 
 exports.getUsers = async(req,res)=>{
+
     try {
         const findUser = await user.findOne({
             where:{
                 id : req.user.id,
                 status: 'admin'
-            }
+            },
         })
 
         if(!findUser){
@@ -159,15 +160,6 @@ exports.getUsers = async(req,res)=>{
             attributes :{
                 exclude : ['createdAt','updatedAt','password']
             },
-            raw : true,
-        })
-
-        dataUsers = dataUsers.map(data=>{
-            return({
-                ...data,
-              image : cloudinary.url(data.image,{secure:true})
-
-            })
         })
 
         res.status(200).send({
@@ -199,7 +191,6 @@ exports.getUser = async (req, res)=>{
             status : 'success',
             data : {
                 ...dataUser,
-                image : cloudinary.url(dataUser.image,{secure:true})
             }
         })
     } catch (error) {
@@ -220,11 +211,10 @@ exports.editUser = async(req,res)=>{
                 },
                 raw : true
             })
-            const check = dataUser.image.match(/defualt.png/g)
+            const check = dataUser.image_public_id.match(/defualt.png/g)
 
             if(check==null){
-                await cloudinary.uploader.destroy(dataUser.image,(res)=>console.log(res))
-                console.log("Req file path: ",req.file.path)
+                await cloudinary.uploader.destroy(dataUser.image_public_id,(res)=>console.log(res))
                 // fs.unlinkSync('upload/product/'+file.filename)
             }
 
@@ -232,21 +222,17 @@ exports.editUser = async(req,res)=>{
                 folder : 'avatar',
                 use_filename: true,
                 unique_filename : false
-            })
-
-            console.log("imagePath: ", imagePath)
-            console.log("imagePath.public_id: ",imagePath.public_id)
-            
+            })            
             dataEdited ={
                 ...req.body,
-                image : imagePath.public_id
+                image_public_id : imagePath.public_id,
+                image : cloudinary.url(imagePath.public_id,{secure:true})
             }
         }else{
             dataEdited ={
                 ...req.body,
             }
         }
-
         await user.update(dataEdited,{
             where :{
                 id : req.user.id
@@ -259,7 +245,6 @@ exports.editUser = async(req,res)=>{
                 id : req.user.id
             }
         })
-
     } catch (error) {
         console.log(error)
         if(req.file){
@@ -274,24 +259,20 @@ exports.editUser = async(req,res)=>{
 
 exports.deleteUser = async(req,res)=>{
     try {
+        console.log("id: ",req.params.id )
         const findData = await user.findOne({
             where :{
-                id : req.user.id,
+                id : req.params.id,
             }
         })
 
-        if(findData.image.match(/avatar\/defualt.png/g)){
-            const urlPhoto = cloudinary.url(findData.image)
-            console.log("findData: ",urlPhoto)
-
-            // fs.unlinkSync('upload/avatar/')
-
-            await cloudinary.uploader.destroy(findData.image,{secure:true})
+        if(findData.image_public_id.match(/avatar\/defualt.png/g)){
+            await cloudinary.uploader.destroy(findData.image_public_id,{secure:true})
         }
 
         await user.destroy({
             where :{
-                id : req.user.id
+                id : req.params.id
             }
         })
         return res.status(201).send({
@@ -332,7 +313,6 @@ exports.checkAuth = async (req, res)=>{
             data :{
                 ...dataUser,
                 password : "Access denied",
-                image : cloudinary.url(dataUser.image,{secure:true})
             }
         })
     } catch (error) {

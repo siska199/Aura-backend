@@ -19,7 +19,6 @@ module.exports = (sequelize, DataTypes) => {
         as:'user',
         foreignKey:'idUser'      
       })
-      
     }
   };
   comment.init({

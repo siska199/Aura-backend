@@ -23,7 +23,9 @@ module.exports = (sequelize, DataTypes) => {
 
       product.hasMany(models.comment,{
         as:  'comments',
-        foreignKey : 'idProduct'
+        foreignKey : {name: 'idProduct'},
+        onUpdate:'cascade',
+        onDelete:'cascade',
       })
       
     }
@@ -39,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     images: DataTypes.STRING,
+    images_public_id: DataTypes.STRING,
     title: DataTypes.STRING,
     review: DataTypes.STRING,
     price: DataTypes.INTEGER,

@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      user.hasMany(models.product,{
+        as : "products",
+        foreignKey:{name:'idUser'}      
+      })
     }
   };
   user.init({
@@ -22,8 +26,8 @@ module.exports = (sequelize, DataTypes) => {
     address: DataTypes.STRING,
     phone: DataTypes.INTEGER,
     gender: DataTypes.STRING,
-    image: DataTypes.STRING
-
+    image: DataTypes.STRING,
+    image_public_id: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'user',

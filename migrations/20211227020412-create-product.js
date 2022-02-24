@@ -14,6 +14,9 @@ module.exports = {
       images: {
         type: Sequelize.STRING
       },
+      images_public_id: {
+        type: Sequelize.STRING
+      },
       title: {
         type: Sequelize.STRING
       },
