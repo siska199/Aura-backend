@@ -23,9 +23,7 @@ module.exports = (sequelize, DataTypes) => {
 
       product.hasMany(models.comment,{
         as:  'comments',
-        foreignKey : {name: 'idProduct'},
-        onUpdate:'cascade',
-        onDelete:'cascade',
+        foreignKey : 'idProduct',
       })
       
     }

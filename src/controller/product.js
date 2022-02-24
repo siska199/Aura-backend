@@ -170,7 +170,7 @@ exports.getProducts = async(req,res)=>{
         let dataProducts = await product.findAll({
             include : [categoryInformation,commentsInformation],
             attributes :{
-                exclude :  ['createdAt','updatedAt']
+                exclude :  ['createdAt','updatedAt',"idCategory","idUser"]
             },
         })
 
@@ -211,7 +211,6 @@ exports.editProduct = async(req, res)=>{
                 images:JSON.stringify(images),
                 images_public_id : JSON.stringify(images_public_id)
             }
-            console.log("data: ", data)
         }
 
         if(req.body.category){
@@ -296,23 +295,23 @@ exports.deleteProduct = async (req, res)=>{
     }
 }
 
-exports.getProductTransactions = async(req, res)=>{
-    try {
-        let dataPT = await product.findAll({
-            include :[categoryInformation,transactionInformation],
-            attributes:{
-                exclude :["createdAt", "updatedAt"]
-            }
-        })
+// exports.getProductTransactions = async(req, res)=>{
+//     try {
+//         let dataPT = await product.findAll({
+//             include :[categoryInformation,transactionInformation],
+//             attributes:{
+//                 exclude :["createdAt", "updatedAt"]
+//             }
+//         })
 
-        return res.status(200).send({
-            status : 'success',
-            data : dataPT
-        })
-    } catch (error) {
-        return res.status(500).send({
-            status: 'failed',
-            message: error
-        })
-    }
-}
+//         return res.status(200).send({
+//             status : 'success',
+//             data : dataPT
+//         })
+//     } catch (error) {
+//         return res.status(500).send({
+//             status: 'failed',
+//             message: error
+//         })
+//     }
+// }

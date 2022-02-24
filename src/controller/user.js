@@ -53,7 +53,7 @@ exports.register = async(req, res)=>{
         const addUser = await user.create({
             ...req.body,
             password:  hashedPassword,
-            status:'admin',
+            status:'user',
             fullName: '',
             address: '',
             phone: 0,
@@ -99,7 +99,7 @@ exports.login = async(req, res)=>{
                 username : req.body.username
             },
             attributes :{
-                exclude : ['createdAt','updatedAt' ]
+                exclude : ['createdAt','updatedAt','status']
             },
             raw:true       
         })
@@ -158,7 +158,7 @@ exports.getUsers = async(req,res)=>{
 
         let dataUsers = await user.findAll({
             attributes :{
-                exclude : ['createdAt','updatedAt','password']
+                exclude : ['createdAt','updatedAt','password','status']
             },
         })
 
@@ -182,7 +182,7 @@ exports.getUser = async (req, res)=>{
                 id : req.params.id
             },
             attributes:{
-                exclude : ['createdAt','updatedAt','password']
+                exclude : ['createdAt','updatedAt','password','status']
             },
             raw: true
         })

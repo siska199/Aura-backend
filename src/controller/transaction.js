@@ -6,7 +6,7 @@ const categoryInformation = {
     model:category,
     as : 'category',
     attributes :{
-        exclude :  ['createdAt','updatedAt']
+        exclude :  ['id','createdAt','updatedAt']
     },
 }
 
@@ -14,7 +14,7 @@ const productInformation  = {
     model : product,
     as : 'product',
     attributes :{
-        exclude :  ['createdAt','updatedAt']
+        exclude :  ['idcategory','idUser','createdAt','updatedAt']
     },
     include :categoryInformation
 }
@@ -23,7 +23,7 @@ const userInformation = {
     model :user,
     as : 'user',
     attributes :{
-        exclude :  ['createdAt','updatedAt']
+        exclude:  ['password','id','status','fullName','email','phone','address','gender','image_public_id','createdAt','updatedAt']
     },
 }
 
@@ -66,7 +66,7 @@ exports.addTransaction = async(req, res)=>{
         if(!findProduct){
             return res.status(400).send({
                 status : 'error',
-                message :'No product associate with this category'
+                message :'The product does not exist'
             })
         }
 
@@ -93,8 +93,6 @@ exports.addTransaction = async(req, res)=>{
             attributes:{
                 exclude : ['createdAt','updatedAt'],
             },
-            raw : true,
-            nest : true
         })
 
         return res.status(200).send({
@@ -117,29 +115,16 @@ exports.getTransaction = async(req, res)=>{
         console.log("Oke")
         const {id} = req.params
 
-        let data = await transaction.findOne({
+        const data = await transaction.findOne({
             where :{
                 id
             },
             include : [userInformation,productInformation],
-            raw :true,
-            nest:true
+            attributes :{
+                exclude : ['createdAt']
+            }
         })
 
-        let images = []
-        for(file of JSON.parse(data.product.images)){
-            console.log("file: ", file)
-            images.push(cloudinary.url(file,{secure:true}))
-        }
-        data = {
-            ...data,
-            product : {
-                ...data.product,
-                images : images,
-            }
-        }
-
-        console.log("Result data: ", data)
         return res.status(200).send({
             status : 'success',
             data 
@@ -155,6 +140,7 @@ exports.getTransaction = async(req, res)=>{
 
 exports.getTransactions = async(req, res)=>{
     try {
+        console.log("status get transactions: ", req.query.status)
         const userData = await user.findOne({
             where :{
                 id : req.user.id
@@ -163,16 +149,16 @@ exports.getTransactions = async(req, res)=>{
 
         let data = await transaction.findAll({
             where :{
-                status : 'Aprove' || 'Waiting Approve'
+                status : req.query.status
             },
             include :[userInformation,productInformation],
-
-            raw : true,
-            nest : true
         })
 
         if(userData.status=='user'){
             data = await transaction.findAll({
+                where :{
+                    status : req.query.status
+                },
                 include : [productInformation,{
                     model :user,
                     as : 'user',
@@ -182,27 +168,10 @@ exports.getTransactions = async(req, res)=>{
                     where : {
                         id : req.user.id
                     }
-                }],
-                raw : true,
-                nest : true
+                }]
             })
         }
-
-        data = data.map(d=>{
-            let images = []
-            for(file of JSON.parse(d.product.images)){
-                console.log("file: ", file)
-                images.push(cloudinary.url(file,{secure:true}))
-            }
-            return({ 
-                ...d,
-                product : {
-                    ...d.product,
-                    images : images,
-                }
-            })
-        })
-
+        console.log("Final data: ", data)
         return res.status(200).send({
             status : 'success',
             data
@@ -218,6 +187,7 @@ exports.getTransactions = async(req, res)=>{
 
 exports.editTransaction = async(req,res)=>{
     try {
+        console.log("id: ", req.params.id)
         const dataTransaction = await transaction.findOne({
             where:{
                 id : req.params.id
@@ -226,26 +196,29 @@ exports.editTransaction = async(req,res)=>{
             raw:true,
             nest:true
         })
-
-        let dataUpdated = {...req.body}
-        if(req.body.status=='Waiting Approve'){
+        if(req.body.status=='Approve'){
             const stock = dataTransaction.product.stock-dataTransaction.qty
-            dataUpdated = {...dataUpdated,stock}
+            await product.update(stock,{
+                where :{
+                    id :dataTransaction.idProduct
+                }
+            })       
         }
 
-        await product.update(dataUpdated,{
-            where :{
-                id : req.body.idProduct
+        const dataCategoryUpdated = await transaction.update(req.body,{
+            where:{
+                id : req.params.id
             }
         })
 
         return res.status(200).send({
             status : 'success',
             message : `Updated product with id: ${req.params.id} success`,
-            data : dataTransaction 
+            data : dataCategoryUpdated 
         })
 
     } catch (error) {
+        console.log(error)
         return res.status(500).send({
             status : 'error',
             message : error

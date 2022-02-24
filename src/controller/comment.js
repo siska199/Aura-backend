@@ -1,19 +1,5 @@
-const {user, product, comment} = require('../../models')
+const {comment} = require('../../models')
 
-// const productInformation  = {
-//     model : product,
-//     as : 'product',
-//     attributes :{
-//         exclude :  ['createdAt','updatedAt']
-//     },
-// }
-const userInformation  = {
-    model : user,
-    as : 'user',
-    attributes :{
-        exclude :  ['createdAt','updatedAt']
-    },
-}
 
 exports.addComment = async(req, res)=>{
     try {
@@ -45,12 +31,9 @@ exports.getComment = async (req,res)=>{
             where:{
                 id
             },
-            include: [userInformation],
             attributes :{
                 exclude : ['createdAt','updatedAt']
             },
-            raw : true,
-            nest : true 
         })
 
         return res.status(200).send({
@@ -69,12 +52,9 @@ exports.getComment = async (req,res)=>{
 exports.getComments = async(req, res)=>{
     try {
         const data = await comment.findAll({
-            include:  [userInformation],
             attributes :{
                 exclude : ['createdAt','updatedAt']
             },
-            raw : true,
-            nest : true
         })
         
         return res.status(200).send({

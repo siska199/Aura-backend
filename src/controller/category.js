@@ -27,6 +27,20 @@ exports.addCategory = async(req, res)=>{
                 message : 'Forbidden to access'
             })
         }
+
+        //Check the category have been exist or not:
+        const checkData = await category.findOne({
+            where : {
+                name : req.body.name
+            }
+        })
+        if(checkData){
+            return res.status(200).send({
+                status : 'failed',
+                message:'this category have been exist',
+            })
+        }
+
         const data = await category.create(req.body)
         return res.status(200).send({
             status : 'success',

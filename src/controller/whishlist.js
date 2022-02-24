@@ -12,7 +12,7 @@ const userInformation  = {
     model : user,
     as : 'user',
     attributes :{
-        exclude :  ['createdAt','updatedAt','password']
+        exclude:  ['password','id','status','fullName','email','phone','address','gender','image_public_id','createdAt','updatedAt']
     },
 }
 
@@ -29,7 +29,6 @@ exports.addRemoveWhishlist = async(req, res)=>{
             },
             raw : true
         })
-        console.log("dataUser: ", dataUser)
 
         if(!dataUser){
             return res.status(400).send({
@@ -40,18 +39,17 @@ exports.addRemoveWhishlist = async(req, res)=>{
         }
         const checkWhishlist = await whishlist.findOne({
             where :{
-                idProduct : req.body.idProduct
+                idProduct : req.body.idProduct,
+                idUser : req.user.id
             },
             attributes :{
                 exclude : ['createdAt','updatedAt' ]
             },
             raw : true
         })
-        console.log("checkWhishlist: ",checkWhishlist)
 
-        let dataWhishlist 
         if(checkWhishlist){
-            dataWhishlist  = await whishlist.destroy({
+             await whishlist.destroy({
                 where : {
                     id : checkWhishlist.id
                 }
@@ -60,39 +58,26 @@ exports.addRemoveWhishlist = async(req, res)=>{
                 status : 'success remove whishlist',
             })
         }else{
-            dataWhishlist  = await whishlist.create({
+           await whishlist.create({
                 love:true,
                 idUser:req.user.id,
                 idProduct: req.body.idProduct
             })
         }
-        console.log("dataWhishlist: ", dataWhishlist)
 
-        let dataSended = await whishlist.findOne({
+        const dataSended = await whishlist.findOne({
             where :{
                 idUser : req.user.id,
                 idProduct : req.body.idProduct
             },
             attributes :{
-                exclude : ['createdAt','updatedAt']
+                exclude : ['idProduct','idUser','createdAt','updatedAt']
             },
             include : [productInformation,userInformation],
             raw : true,
             nest : true
         })
-        console.log("dataSended: ", dataSended)
 
-        let images = []
-        for(file of JSON.parse(dataSended.product.images)){
-            images.push(cloudinary.url(file, {secure:true}))
-        }
-        dataSended = {
-            ...dataSended,
-            product : {
-                ...dataSended.product,
-                images
-            }
-        }
         return res.status(200).send({
             status : 'success',
             data : dataSended

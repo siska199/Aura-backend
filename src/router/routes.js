@@ -29,7 +29,7 @@ router.get('/product/:id',auth, getProduct)
 router.get('/products',auth,getProducts)
 router.patch('/product/:id',auth,upload('images'),editProduct)
 router.delete('/product/:id',auth,deleteProduct)
-router.get('/product-transactions',auth, getProductTransactions)
+// router.get('/product-transactions',auth, getProductTransactions)
 
 router.post('/transaction',auth, addTransaction)
 router.get('/transaction/:id',auth, getTransaction)
